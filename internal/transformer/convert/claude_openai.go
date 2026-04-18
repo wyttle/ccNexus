@@ -186,6 +186,11 @@ func OpenAIReqToClaude(openaiReq []byte, model string) ([]byte, error) {
 	if req.Temperature != nil {
 		claudeReq["temperature"] = *req.Temperature
 	}
+	if thinking := buildClaudeThinkingFromReasoning(req.Reasoning); thinking != nil {
+		claudeReq["thinking"] = thinking
+	} else if req.EnableThinking {
+		claudeReq["thinking"] = map[string]interface{}{"type": "enabled"}
+	}
 
 	// Convert messages
 	var systemPrompt string
@@ -262,6 +267,35 @@ func OpenAIReqToClaude(openaiReq []byte, model string) ([]byte, error) {
 	}
 
 	return json.Marshal(claudeReq)
+}
+
+func buildClaudeThinkingFromReasoning(reasoning interface{}) map[string]interface{} {
+	reasoningMap, ok := reasoning.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	effortRaw, ok := reasoningMap["effort"]
+	if !ok {
+		return nil
+	}
+	effort, ok := effortRaw.(string)
+	if !ok {
+		return nil
+	}
+
+	switch strings.ToLower(strings.TrimSpace(effort)) {
+	case "minimal", "low":
+		return map[string]interface{}{"type": "enabled", "budget_tokens": 1024}
+	case "medium":
+		return map[string]interface{}{"type": "enabled", "budget_tokens": 4096}
+	case "high":
+		return map[string]interface{}{"type": "enabled", "budget_tokens": 8192}
+	case "xhigh":
+		return map[string]interface{}{"type": "enabled", "budget_tokens": 16384}
+	default:
+		return nil
+	}
 }
 
 // ClaudeRespToOpenAI converts Claude response to OpenAI Chat response

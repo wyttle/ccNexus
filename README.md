@@ -22,7 +22,7 @@
 - **实时统计**：事件驱动的零延迟统计更新，支持今日/昨日/本周/本月四周期快速切换
 - **端点筛选**：按类型、可用性、启用状态多选筛选，快速定位端点
 - **WebDAV 同步**：多设备间同步配置和数据
-- **跨平台**：Windows、macOS、Linux
+- **思考强度可调（Reasoning Effort）**：支持 OpenAI 兼容字段 `reasoning.effort`（`minimal/low/medium/high/xhigh`）并自动映射到 Claude `thinking.budget_tokens`
 - **[Docker](docs/README_DOCKER.md)**：纯后端 HTTP 服务，并提供容器化运行
 
 <table>
@@ -83,6 +83,37 @@ wire_api = "responses"  # 或 "chat"
 ```
 
 `~/.codex/auth.json` 可以忽略了。
+
+### 思考强度（Reasoning Effort）
+
+当端点转换器为 `claude` 时，ccNexus 现支持 OpenAI 兼容的 `reasoning.effort` 参数，并自动映射为 Claude 的 `thinking.budget_tokens`：
+
+- `minimal` / `low` → `1024`
+- `medium` → `4096`
+- `high` → `8192`
+- `xhigh` → `16384`
+
+请求示例（Chat Completions）：
+```json
+{
+  "model": "your-model",
+  "messages": [{"role": "user", "content": "你好"}],
+  "reasoning": {"effort": "high"}
+}
+```
+
+请求示例（Responses API）：
+```json
+{
+  "model": "your-model",
+  "input": [{"type": "message", "role": "user", "content": [{"type": "input_text", "text": "你好"}]}],
+  "reasoning": {"effort": "medium"}
+}
+```
+
+兼容说明：
+- 旧字段 `enable_thinking: true` 继续可用，会映射为 `thinking: {"type":"enabled"}`。
+- 当同时提供 `reasoning.effort` 与 `enable_thinking` 时，优先使用 `reasoning.effort`。
 
 ## 获取帮助
 

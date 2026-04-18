@@ -447,6 +447,20 @@ export function initUI() {
                             ${t('modal.modelHelp')}
                         </p>
                     </div>
+                    <div class="form-group" id="reasoningEffortFieldGroup" style="display: block;">
+                        <label>${t('modal.reasoningEffort')}</label>
+                        <select id="endpointReasoningEffort">
+                            <option value="">${t('modal.reasoningEffortAuto')}</option>
+                            <option value="minimal">${t('modal.reasoningEffortMinimal')}</option>
+                            <option value="low">${t('modal.reasoningEffortLow')}</option>
+                            <option value="medium">${t('modal.reasoningEffortMedium')}</option>
+                            <option value="high">${t('modal.reasoningEffortHigh')}</option>
+                            <option value="xhigh">${t('modal.reasoningEffortXHigh')}</option>
+                        </select>
+                        <p style="color: #666; font-size: 12px; margin-top: 5px;" id="reasoningEffortHelpText">
+                            ${t('modal.reasoningEffortHelp')}
+                        </p>
+                    </div>
                     <div class="form-group">
                         <label>${t('modal.remark')}</label>
                         <input type="text" id="endpointRemark" placeholder="${t('modal.remarkHelp')}">

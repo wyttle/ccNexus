@@ -22,15 +22,16 @@ func (a *ConfigStorageAdapter) GetEndpoints() ([]config.StorageEndpoint, error) 
 	result := make([]config.StorageEndpoint, len(endpoints))
 	for i, ep := range endpoints {
 		result[i] = config.StorageEndpoint{
-			Name:        ep.Name,
-			APIUrl:      ep.APIUrl,
-			APIKey:      ep.APIKey,
-			AuthMode:    ep.AuthMode,
-			Enabled:     ep.Enabled,
-			Transformer: ep.Transformer,
-			Model:       ep.Model,
-			Remark:      ep.Remark,
-			SortOrder:   ep.SortOrder,
+			Name:            ep.Name,
+			APIUrl:          ep.APIUrl,
+			APIKey:          ep.APIKey,
+			AuthMode:        ep.AuthMode,
+			Enabled:         ep.Enabled,
+			Transformer:     ep.Transformer,
+			Model:           ep.Model,
+			ReasoningEffort: ep.ReasoningEffort,
+			Remark:          ep.Remark,
+			SortOrder:       ep.SortOrder,
 		}
 	}
 	return result, nil
@@ -39,15 +40,16 @@ func (a *ConfigStorageAdapter) GetEndpoints() ([]config.StorageEndpoint, error) 
 // SaveEndpoint saves an endpoint
 func (a *ConfigStorageAdapter) SaveEndpoint(ep *config.StorageEndpoint) error {
 	endpoint := &Endpoint{
-		Name:        ep.Name,
-		APIUrl:      ep.APIUrl,
-		APIKey:      ep.APIKey,
-		AuthMode:    ep.AuthMode,
-		Enabled:     ep.Enabled,
-		Transformer: ep.Transformer,
-		Model:       ep.Model,
-		Remark:      ep.Remark,
-		SortOrder:   ep.SortOrder,
+		Name:            ep.Name,
+		APIUrl:          ep.APIUrl,
+		APIKey:          ep.APIKey,
+		AuthMode:        ep.AuthMode,
+		Enabled:         ep.Enabled,
+		Transformer:     ep.Transformer,
+		Model:           ep.Model,
+		ReasoningEffort: ep.ReasoningEffort,
+		Remark:          ep.Remark,
+		SortOrder:       ep.SortOrder,
 	}
 	return a.storage.SaveEndpoint(endpoint)
 }
@@ -55,15 +57,16 @@ func (a *ConfigStorageAdapter) SaveEndpoint(ep *config.StorageEndpoint) error {
 // UpdateEndpoint updates an endpoint
 func (a *ConfigStorageAdapter) UpdateEndpoint(ep *config.StorageEndpoint) error {
 	endpoint := &Endpoint{
-		Name:        ep.Name,
-		APIUrl:      ep.APIUrl,
-		APIKey:      ep.APIKey,
-		AuthMode:    ep.AuthMode,
-		Enabled:     ep.Enabled,
-		Transformer: ep.Transformer,
-		Model:       ep.Model,
-		Remark:      ep.Remark,
-		SortOrder:   ep.SortOrder,
+		Name:            ep.Name,
+		APIUrl:          ep.APIUrl,
+		APIKey:          ep.APIKey,
+		AuthMode:        ep.AuthMode,
+		Enabled:         ep.Enabled,
+		Transformer:     ep.Transformer,
+		Model:           ep.Model,
+		ReasoningEffort: ep.ReasoningEffort,
+		Remark:          ep.Remark,
+		SortOrder:       ep.SortOrder,
 	}
 	return a.storage.UpdateEndpoint(endpoint)
 }
