@@ -41,6 +41,7 @@ type OpenAIRequest struct {
 	Stream              bool            `json:"stream,omitempty"`
 	StreamOptions       *StreamOptions  `json:"stream_options,omitempty"`
 	EnableThinking      bool            `json:"enable_thinking,omitempty"` // For models that support reasoning/thinking
+	Reasoning           interface{}     `json:"reasoning,omitempty"`       // OpenAI-compatible reasoning config (e.g. {"effort":"minimal|low|medium|high|xhigh"})
 	Tools               []OpenAITool    `json:"tools,omitempty"`
 	ToolChoice          interface{}     `json:"tool_choice,omitempty"`
 }
@@ -362,6 +363,7 @@ type OpenAI2Request struct {
 	Stream          bool          `json:"stream,omitempty"`
 	MaxOutputTokens int           `json:"max_output_tokens,omitempty"`
 	Temperature     *float64      `json:"temperature,omitempty"`
+	Reasoning       interface{}   `json:"reasoning,omitempty"` // OpenAI-compatible reasoning config (e.g. {"effort":"minimal|low|medium|high|xhigh"})
 }
 
 // OpenAI2OutputItem represents an output item in Responses API response

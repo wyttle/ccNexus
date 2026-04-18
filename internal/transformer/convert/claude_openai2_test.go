@@ -8,6 +8,40 @@ import (
 	"github.com/lich0821/ccNexus/internal/transformer"
 )
 
+func TestOpenAI2ReqToClaudeWithReasoningEffortMedium(t *testing.T) {
+	openai2Req := `{
+		"model": "gpt-4.1",
+		"input": [{
+			"type": "message",
+			"role": "user",
+			"content": [{"type": "input_text", "text": "hello"}]
+		}],
+		"reasoning": {"effort": "medium"},
+		"max_output_tokens": 256
+	}`
+
+	claudeReqBytes, err := OpenAI2ReqToClaude([]byte(openai2Req), "claude-sonnet-4-20250514")
+	if err != nil {
+		t.Fatalf("OpenAI2ReqToClaude failed: %v", err)
+	}
+
+	var claudeReq map[string]interface{}
+	if err := json.Unmarshal(claudeReqBytes, &claudeReq); err != nil {
+		t.Fatalf("Failed to unmarshal Claude request: %v", err)
+	}
+
+	thinking, ok := claudeReq["thinking"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Expected thinking map, got %T", claudeReq["thinking"])
+	}
+	if thinking["type"] != "enabled" {
+		t.Fatalf("Expected thinking.type enabled, got %#v", thinking["type"])
+	}
+	if thinking["budget_tokens"] != float64(4096) {
+		t.Fatalf("Expected thinking.budget_tokens 4096, got %#v", thinking["budget_tokens"])
+	}
+}
+
 func TestOpenAI2RespToClaudeWithThinking(t *testing.T) {
 	openai2Resp := `{
 		"id": "resp_1",

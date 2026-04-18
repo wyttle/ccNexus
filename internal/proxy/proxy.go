@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -468,7 +470,12 @@ func (p *Proxy) handleProxy(w http.ResponseWriter, r *http.Request) {
 
 		transformerName := trans.Name()
 
-		transformedBody, err := trans.TransformRequest(bodyBytes)
+		requestPayload := bodyBytes
+		if strings.TrimSpace(strings.ToLower(endpoint.Transformer)) == "claude" {
+			requestPayload = applyEndpointReasoningEffort(bodyBytes, endpoint.ReasoningEffort)
+		}
+
+		transformedBody, err := trans.TransformRequest(requestPayload)
 		if err != nil {
 			logger.Error("[%s] Failed to transform request: %v", endpoint.Name, err)
 			p.stats.RecordError(endpoint.Name)
@@ -482,6 +489,7 @@ func (p *Proxy) handleProxy(w http.ResponseWriter, r *http.Request) {
 
 		logger.DebugLog("[%s] Transformer: %s", endpoint.Name, transformerName)
 		logger.DebugLog("[%s] Transformed Request: %s", endpoint.Name, string(transformedBody))
+		dumpForwardDebug(endpoint, transformerName, bodyBytes, requestPayload, transformedBody)
 
 		// 如果有模型覆盖值，应用到转换后的请求体中
 		if modelOverride != "" {
@@ -868,6 +876,94 @@ func shouldTreatCredentialAuthFailure(statusCode int, body string) bool {
 		return false
 	}
 	return true
+}
+
+func applyEndpointReasoningEffort(body []byte, effort string) []byte {
+	effort = strings.ToLower(strings.TrimSpace(effort))
+	if effort == "" {
+		return body
+	}
+	if effort != "minimal" && effort != "low" && effort != "medium" && effort != "high" && effort != "xhigh" {
+		return body
+	}
+
+	var req map[string]interface{}
+	if err := json.Unmarshal(body, &req); err != nil {
+		return body
+	}
+
+	reasoning, ok := req["reasoning"].(map[string]interface{})
+	if !ok || reasoning == nil {
+		reasoning = map[string]interface{}{}
+		req["reasoning"] = reasoning
+	}
+	reasoning["effort"] = effort
+	if _, exists := req["enable_thinking"]; !exists {
+		req["enable_thinking"] = true
+	}
+
+	budget := 0
+	switch effort {
+	case "minimal", "low":
+		budget = 1024
+	case "medium":
+		budget = 4096
+	case "high":
+		budget = 8192
+	case "xhigh":
+		budget = 16384
+	}
+	if budget > 0 {
+		req["thinking"] = map[string]interface{}{
+			"type":          "enabled",
+			"budget_tokens": budget,
+		}
+	}
+
+	updated, err := json.Marshal(req)
+	if err != nil {
+		return body
+	}
+	return updated
+}
+
+func dumpForwardDebug(endpoint config.Endpoint, transformerName string, originalBody, requestPayload, transformedBody []byte) {
+	dir := os.Getenv("CCNEXUS_DEBUG_DIR")
+	if strings.TrimSpace(dir) == "" {
+		dir = "/tmp/ccNexus-debug"
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		logger.Warn("[%s] Failed to create debug dir: %v", endpoint.Name, err)
+		return
+	}
+
+	now := time.Now().UTC().Format("20060102-150405.000")
+	base := fmt.Sprintf("%s-%s", now, sanitizeDebugName(endpoint.Name))
+
+	meta := map[string]interface{}{
+		"time_utc":            time.Now().UTC().Format(time.RFC3339Nano),
+		"endpoint":            endpoint.Name,
+		"transformer":         endpoint.Transformer,
+		"transformer_name":    transformerName,
+		"endpoint_reasoning":  endpoint.ReasoningEffort,
+		"endpoint_model":      endpoint.Model,
+		"auth_mode":           endpoint.AuthMode,
+	}
+	if data, err := json.MarshalIndent(meta, "", "  "); err == nil {
+		_ = os.WriteFile(filepath.Join(dir, base+".meta.json"), data, 0o644)
+	}
+	_ = os.WriteFile(filepath.Join(dir, base+".incoming.json"), originalBody, 0o644)
+	_ = os.WriteFile(filepath.Join(dir, base+".request_payload.json"), requestPayload, 0o644)
+	_ = os.WriteFile(filepath.Join(dir, base+".forwarded.json"), transformedBody, 0o644)
+}
+
+func sanitizeDebugName(name string) string {
+	name = strings.TrimSpace(strings.ToLower(name))
+	if name == "" {
+		return "endpoint"
+	}
+	replacer := strings.NewReplacer("/", "_", "\\", "_", " ", "_", ":", "_", "*", "_", "?", "_", "\"", "_", "<", "_", ">", "_", "|", "_")
+	return replacer.Replace(name)
 }
 
 func isTransientNetworkError(err error) bool {

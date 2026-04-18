@@ -435,3 +435,99 @@ func TestClaudeReqToOpenAIThinkingOnly(t *testing.T) {
 		}
 	}
 }
+
+func TestOpenAIReqToClaudeWithReasoningEffortHigh(t *testing.T) {
+	openaiReq := `{
+		"model": "gpt-4.1",
+		"messages": [
+			{"role": "user", "content": "hello"}
+		],
+		"reasoning": {"effort": "high"},
+		"max_tokens": 256
+	}`
+
+	claudeReqBytes, err := OpenAIReqToClaude([]byte(openaiReq), "claude-sonnet-4-20250514")
+	if err != nil {
+		t.Fatalf("OpenAIReqToClaude failed: %v", err)
+	}
+
+	var claudeReq map[string]interface{}
+	if err := json.Unmarshal(claudeReqBytes, &claudeReq); err != nil {
+		t.Fatalf("Failed to unmarshal Claude request: %v", err)
+	}
+
+	thinking, ok := claudeReq["thinking"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Expected thinking map, got %T", claudeReq["thinking"])
+	}
+	if thinking["type"] != "enabled" {
+		t.Fatalf("Expected thinking.type enabled, got %#v", thinking["type"])
+	}
+	if thinking["budget_tokens"] != float64(8192) {
+		t.Fatalf("Expected thinking.budget_tokens 8192, got %#v", thinking["budget_tokens"])
+	}
+}
+
+func TestOpenAIReqToClaudeWithReasoningEffortXHigh(t *testing.T) {
+	openaiReq := `{
+		"model": "gpt-4.1",
+		"messages": [
+			{"role": "user", "content": "hello"}
+		],
+		"reasoning": {"effort": "xhigh"},
+		"max_tokens": 256
+	}`
+
+	claudeReqBytes, err := OpenAIReqToClaude([]byte(openaiReq), "claude-sonnet-4-20250514")
+	if err != nil {
+		t.Fatalf("OpenAIReqToClaude failed: %v", err)
+	}
+
+	var claudeReq map[string]interface{}
+	if err := json.Unmarshal(claudeReqBytes, &claudeReq); err != nil {
+		t.Fatalf("Failed to unmarshal Claude request: %v", err)
+	}
+
+	thinking, ok := claudeReq["thinking"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Expected thinking map, got %T", claudeReq["thinking"])
+	}
+	if thinking["type"] != "enabled" {
+		t.Fatalf("Expected thinking.type enabled, got %#v", thinking["type"])
+	}
+	if thinking["budget_tokens"] != float64(16384) {
+		t.Fatalf("Expected thinking.budget_tokens 16384, got %#v", thinking["budget_tokens"])
+	}
+}
+
+func TestOpenAIReqToClaudeEnableThinkingFallback(t *testing.T) {
+	openaiReq := `{
+		"model": "gpt-4.1",
+		"messages": [
+			{"role": "user", "content": "hello"}
+		],
+		"enable_thinking": true,
+		"max_tokens": 256
+	}`
+
+	claudeReqBytes, err := OpenAIReqToClaude([]byte(openaiReq), "claude-sonnet-4-20250514")
+	if err != nil {
+		t.Fatalf("OpenAIReqToClaude failed: %v", err)
+	}
+
+	var claudeReq map[string]interface{}
+	if err := json.Unmarshal(claudeReqBytes, &claudeReq); err != nil {
+		t.Fatalf("Failed to unmarshal Claude request: %v", err)
+	}
+
+	thinking, ok := claudeReq["thinking"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Expected thinking map, got %T", claudeReq["thinking"])
+	}
+	if thinking["type"] != "enabled" {
+		t.Fatalf("Expected thinking.type enabled, got %#v", thinking["type"])
+	}
+	if _, hasBudget := thinking["budget_tokens"]; hasBudget {
+		t.Fatalf("Expected no budget_tokens for enable_thinking fallback, got %#v", thinking["budget_tokens"])
+	}
+}

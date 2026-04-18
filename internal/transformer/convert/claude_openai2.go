@@ -160,6 +160,9 @@ func OpenAI2ReqToClaude(openai2Req []byte, model string) ([]byte, error) {
 	if req.Temperature != nil {
 		claudeReq["temperature"] = *req.Temperature
 	}
+	if thinking := buildClaudeThinkingFromReasoning(req.Reasoning); thinking != nil {
+		claudeReq["thinking"] = thinking
+	}
 
 	// Convert input to messages
 	messages := convertOpenAI2InputToClaude(req.Input)

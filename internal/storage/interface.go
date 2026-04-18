@@ -3,18 +3,19 @@ package storage
 import "time"
 
 type Endpoint struct {
-	ID          int64     `json:"id"`
-	Name        string    `json:"name"`
-	APIUrl      string    `json:"apiUrl"`
-	APIKey      string    `json:"apiKey"`
-	AuthMode    string    `json:"authMode"`
-	Enabled     bool      `json:"enabled"`
-	Transformer string    `json:"transformer"`
-	Model       string    `json:"model"`
-	Remark      string    `json:"remark"`
-	SortOrder   int       `json:"sortOrder"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID              int64     `json:"id"`
+	Name            string    `json:"name"`
+	APIUrl          string    `json:"apiUrl"`
+	APIKey          string    `json:"apiKey"`
+	AuthMode        string    `json:"authMode"`
+	Enabled         bool      `json:"enabled"`
+	Transformer     string    `json:"transformer"`
+	Model           string    `json:"model"`
+	ReasoningEffort string    `json:"reasoningEffort,omitempty"`
+	Remark          string    `json:"remark"`
+	SortOrder       int       `json:"sortOrder"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 type EndpointCredential struct {

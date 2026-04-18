@@ -93,6 +93,7 @@ func (s *SQLiteStorage) initSchema() error {
 		enabled BOOLEAN DEFAULT TRUE,
 		transformer TEXT DEFAULT 'claude',
 		model TEXT,
+		reasoning_effort TEXT DEFAULT '',
 		remark TEXT,
 		sort_order INTEGER DEFAULT 0,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -180,6 +181,9 @@ func (s *SQLiteStorage) initSchema() error {
 	if err := s.migrateAuthMode(); err != nil {
 		return err
 	}
+	if err := s.migrateReasoningEffort(); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -226,11 +230,28 @@ func (s *SQLiteStorage) migrateAuthMode() error {
 	return err
 }
 
+func (s *SQLiteStorage) migrateReasoningEffort() error {
+	var count int
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('endpoints') WHERE name='reasoning_effort'`).Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		if _, err := s.db.Exec(`ALTER TABLE endpoints ADD COLUMN reasoning_effort TEXT DEFAULT ''`); err != nil {
+			return err
+		}
+	}
+
+	_, err = s.db.Exec(`UPDATE endpoints SET reasoning_effort='' WHERE reasoning_effort IS NULL`)
+	return err
+}
+
 func (s *SQLiteStorage) GetEndpoints() ([]Endpoint, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	rows, err := s.db.Query(`SELECT id, name, api_url, api_key, auth_mode, enabled, transformer, model, remark, sort_order, created_at, updated_at FROM endpoints ORDER BY sort_order ASC`)
+	rows, err := s.db.Query(`SELECT id, name, api_url, api_key, auth_mode, enabled, transformer, model, reasoning_effort, remark, sort_order, created_at, updated_at FROM endpoints ORDER BY sort_order ASC`)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +260,7 @@ func (s *SQLiteStorage) GetEndpoints() ([]Endpoint, error) {
 	var endpoints []Endpoint
 	for rows.Next() {
 		var ep Endpoint
-		if err := rows.Scan(&ep.ID, &ep.Name, &ep.APIUrl, &ep.APIKey, &ep.AuthMode, &ep.Enabled, &ep.Transformer, &ep.Model, &ep.Remark, &ep.SortOrder, &ep.CreatedAt, &ep.UpdatedAt); err != nil {
+		if err := rows.Scan(&ep.ID, &ep.Name, &ep.APIUrl, &ep.APIKey, &ep.AuthMode, &ep.Enabled, &ep.Transformer, &ep.Model, &ep.ReasoningEffort, &ep.Remark, &ep.SortOrder, &ep.CreatedAt, &ep.UpdatedAt); err != nil {
 			return nil, err
 		}
 		normalizeEndpointAuthMode(&ep)
@@ -255,8 +276,8 @@ func (s *SQLiteStorage) SaveEndpoint(ep *Endpoint) error {
 
 	normalizeEndpointAuthMode(ep)
 
-	result, err := s.db.Exec(`INSERT INTO endpoints (name, api_url, api_key, auth_mode, enabled, transformer, model, remark, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		ep.Name, ep.APIUrl, ep.APIKey, ep.AuthMode, ep.Enabled, ep.Transformer, ep.Model, ep.Remark, ep.SortOrder)
+	result, err := s.db.Exec(`INSERT INTO endpoints (name, api_url, api_key, auth_mode, enabled, transformer, model, reasoning_effort, remark, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		ep.Name, ep.APIUrl, ep.APIKey, ep.AuthMode, ep.Enabled, ep.Transformer, ep.Model, ep.ReasoningEffort, ep.Remark, ep.SortOrder)
 	if err != nil {
 		return err
 	}
@@ -275,8 +296,8 @@ func (s *SQLiteStorage) UpdateEndpoint(ep *Endpoint) error {
 
 	normalizeEndpointAuthMode(ep)
 
-	_, err := s.db.Exec(`UPDATE endpoints SET api_url=?, api_key=?, auth_mode=?, enabled=?, transformer=?, model=?, remark=?, sort_order=?, updated_at=CURRENT_TIMESTAMP WHERE name=?`,
-		ep.APIUrl, ep.APIKey, ep.AuthMode, ep.Enabled, ep.Transformer, ep.Model, ep.Remark, ep.SortOrder, ep.Name)
+	_, err := s.db.Exec(`UPDATE endpoints SET api_url=?, api_key=?, auth_mode=?, enabled=?, transformer=?, model=?, reasoning_effort=?, remark=?, sort_order=?, updated_at=CURRENT_TIMESTAMP WHERE name=?`,
+		ep.APIUrl, ep.APIKey, ep.AuthMode, ep.Enabled, ep.Transformer, ep.Model, ep.ReasoningEffort, ep.Remark, ep.SortOrder, ep.Name)
 	return err
 }
 
@@ -710,9 +731,9 @@ func (s *SQLiteStorage) getEndpointsFromDB(db *sql.DB, dbName string) ([]Endpoin
 
 	query := ""
 	if authModeColumnCount > 0 {
-		query = fmt.Sprintf(`SELECT id, name, api_url, api_key, COALESCE(auth_mode, 'api_key') as auth_mode, enabled, transformer, model, remark, COALESCE(sort_order, 0) as sort_order, created_at, updated_at FROM %s.endpoints`, dbName)
+		query = fmt.Sprintf(`SELECT id, name, api_url, api_key, COALESCE(auth_mode, 'api_key') as auth_mode, enabled, transformer, model, COALESCE(reasoning_effort, '') as reasoning_effort, remark, COALESCE(sort_order, 0) as sort_order, created_at, updated_at FROM %s.endpoints`, dbName)
 	} else {
-		query = fmt.Sprintf(`SELECT id, name, api_url, api_key, 'api_key' as auth_mode, enabled, transformer, model, remark, COALESCE(sort_order, 0) as sort_order, created_at, updated_at FROM %s.endpoints`, dbName)
+		query = fmt.Sprintf(`SELECT id, name, api_url, api_key, 'api_key' as auth_mode, enabled, transformer, model, COALESCE(reasoning_effort, '') as reasoning_effort, remark, COALESCE(sort_order, 0) as sort_order, created_at, updated_at FROM %s.endpoints`, dbName)
 	}
 
 	rows, err := db.Query(query)
@@ -724,7 +745,7 @@ func (s *SQLiteStorage) getEndpointsFromDB(db *sql.DB, dbName string) ([]Endpoin
 	var endpoints []Endpoint
 	for rows.Next() {
 		var ep Endpoint
-		if err := rows.Scan(&ep.ID, &ep.Name, &ep.APIUrl, &ep.APIKey, &ep.AuthMode, &ep.Enabled, &ep.Transformer, &ep.Model, &ep.Remark, &ep.SortOrder, &ep.CreatedAt, &ep.UpdatedAt); err != nil {
+		if err := rows.Scan(&ep.ID, &ep.Name, &ep.APIUrl, &ep.APIKey, &ep.AuthMode, &ep.Enabled, &ep.Transformer, &ep.Model, &ep.ReasoningEffort, &ep.Remark, &ep.SortOrder, &ep.CreatedAt, &ep.UpdatedAt); err != nil {
 			return nil, err
 		}
 		normalizeEndpointAuthMode(&ep)
@@ -739,14 +760,15 @@ func normalizeEndpointAuthMode(ep *Endpoint) {
 		return
 	}
 	normalized := config.Endpoint{
-		Name:        ep.Name,
-		APIUrl:      ep.APIUrl,
-		APIKey:      ep.APIKey,
-		AuthMode:    ep.AuthMode,
-		Enabled:     ep.Enabled,
-		Transformer: ep.Transformer,
-		Model:       ep.Model,
-		Remark:      ep.Remark,
+		Name:            ep.Name,
+		APIUrl:          ep.APIUrl,
+		APIKey:          ep.APIKey,
+		AuthMode:        ep.AuthMode,
+		Enabled:         ep.Enabled,
+		Transformer:     ep.Transformer,
+		Model:           ep.Model,
+		ReasoningEffort: ep.ReasoningEffort,
+		Remark:          ep.Remark,
 	}
 	if normalized.Transformer == "" {
 		normalized.Transformer = "claude"
@@ -757,6 +779,7 @@ func normalizeEndpointAuthMode(ep *Endpoint) {
 	ep.AuthMode = normalized.AuthMode
 	ep.Transformer = normalized.Transformer
 	ep.Model = normalized.Model
+	ep.ReasoningEffort = normalized.ReasoningEffort
 	ep.Remark = normalized.Remark
 }
 
@@ -784,6 +807,9 @@ func compareEndpoints(local, remote Endpoint) []string {
 	}
 	if local.Remark != remote.Remark {
 		conflicts = append(conflicts, "remark")
+	}
+	if local.ReasoningEffort != remote.ReasoningEffort {
+		conflicts = append(conflicts, "reasoningEffort")
 	}
 
 	return conflicts
@@ -856,8 +882,8 @@ func (s *SQLiteStorage) mergeEndpoints(tx *sql.Tx, strategy MergeStrategy) error
 		// 只插入新端点（忽略冲突）
 		_, err := tx.Exec(fmt.Sprintf(`
 			INSERT OR IGNORE INTO endpoints
-			(name, api_url, api_key, auth_mode, enabled, transformer, model, remark, sort_order)
-			SELECT name, api_url, api_key, %s, enabled, transformer, model, remark, COALESCE(sort_order, 0)
+			(name, api_url, api_key, auth_mode, enabled, transformer, model, reasoning_effort, remark, sort_order)
+			SELECT name, api_url, api_key, %s, enabled, transformer, model, COALESCE(reasoning_effort, ''), remark, COALESCE(sort_order, 0)
 			FROM backup.endpoints
 		`, selectAuthMode))
 		return err
@@ -865,8 +891,8 @@ func (s *SQLiteStorage) mergeEndpoints(tx *sql.Tx, strategy MergeStrategy) error
 		// 替换已存在的端点
 		_, err := tx.Exec(fmt.Sprintf(`
 			INSERT OR REPLACE INTO endpoints
-			(name, api_url, api_key, auth_mode, enabled, transformer, model, remark, sort_order)
-			SELECT name, api_url, api_key, %s, enabled, transformer, model, remark, COALESCE(sort_order, 0)
+			(name, api_url, api_key, auth_mode, enabled, transformer, model, reasoning_effort, remark, sort_order)
+			SELECT name, api_url, api_key, %s, enabled, transformer, model, COALESCE(reasoning_effort, ''), remark, COALESCE(sort_order, 0)
 			FROM backup.endpoints
 		`, selectAuthMode))
 		return err

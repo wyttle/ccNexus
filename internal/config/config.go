@@ -93,14 +93,15 @@ func isCodexBackendAPIURL(raw string) bool {
 
 // Endpoint represents a single API endpoint configuration
 type Endpoint struct {
-	Name        string `json:"name"`
-	APIUrl      string `json:"apiUrl"`
-	APIKey      string `json:"apiKey"`
-	AuthMode    string `json:"authMode,omitempty"`
-	Enabled     bool   `json:"enabled"`
-	Transformer string `json:"transformer,omitempty"` // Transformer type: claude, openai, gemini, deepseek
-	Model       string `json:"model,omitempty"`       // Target model name for non-Claude APIs
-	Remark      string `json:"remark,omitempty"`      // Optional remark for the endpoint
+	Name            string `json:"name"`
+	APIUrl          string `json:"apiUrl"`
+	APIKey          string `json:"apiKey"`
+	AuthMode        string `json:"authMode,omitempty"`
+	Enabled         bool   `json:"enabled"`
+	Transformer     string `json:"transformer,omitempty"`     // Transformer type: claude, openai, gemini, deepseek
+	Model           string `json:"model,omitempty"`           // Target model name for non-Claude APIs
+	ReasoningEffort string `json:"reasoningEffort,omitempty"` // Default reasoning effort: minimal/low/medium/high/xhigh
+	Remark          string `json:"remark,omitempty"`          // Optional remark for the endpoint
 }
 
 // WebDAVConfig represents WebDAV synchronization configuration
@@ -577,15 +578,16 @@ type StorageAdapter interface {
 
 // StorageEndpoint represents an endpoint in storage
 type StorageEndpoint struct {
-	Name        string
-	APIUrl      string
-	APIKey      string
-	AuthMode    string
-	Enabled     bool
-	Transformer string
-	Model       string
-	Remark      string
-	SortOrder   int
+	Name            string
+	APIUrl          string
+	APIKey          string
+	AuthMode        string
+	Enabled         bool
+	Transformer     string
+	Model           string
+	ReasoningEffort string
+	Remark          string
+	SortOrder       int
 }
 
 // LoadFromStorage loads configuration from SQLite storage
@@ -601,14 +603,15 @@ func LoadFromStorage(storage StorageAdapter) (*Config, error) {
 
 	for _, ep := range endpoints {
 		endpoint := Endpoint{
-			Name:        ep.Name,
-			APIUrl:      ep.APIUrl,
-			APIKey:      ep.APIKey,
-			AuthMode:    NormalizeAuthMode(ep.AuthMode),
-			Enabled:     ep.Enabled,
-			Transformer: ep.Transformer,
-			Model:       ep.Model,
-			Remark:      ep.Remark,
+			Name:            ep.Name,
+			APIUrl:          ep.APIUrl,
+			APIKey:          ep.APIKey,
+			AuthMode:        NormalizeAuthMode(ep.AuthMode),
+			Enabled:         ep.Enabled,
+			Transformer:     ep.Transformer,
+			Model:           ep.Model,
+			ReasoningEffort: ep.ReasoningEffort,
+			Remark:          ep.Remark,
 		}
 		if endpoint.Transformer == "" {
 			endpoint.Transformer = "claude"
@@ -854,14 +857,15 @@ func (c *Config) SaveToStorage(storage StorageAdapter) error {
 			SortOrder: i, // Use array index as sort order
 		}
 		normalizedEndpoint := Endpoint{
-			Name:        ep.Name,
-			APIUrl:      ep.APIUrl,
-			APIKey:      ep.APIKey,
-			AuthMode:    ep.AuthMode,
-			Enabled:     ep.Enabled,
-			Transformer: ep.Transformer,
-			Model:       ep.Model,
-			Remark:      ep.Remark,
+			Name:            ep.Name,
+			APIUrl:          ep.APIUrl,
+			APIKey:          ep.APIKey,
+			AuthMode:        ep.AuthMode,
+			Enabled:         ep.Enabled,
+			Transformer:     ep.Transformer,
+			Model:           ep.Model,
+			ReasoningEffort: ep.ReasoningEffort,
+			Remark:          ep.Remark,
 		}
 		if normalizedEndpoint.Transformer == "" {
 			normalizedEndpoint.Transformer = "claude"
@@ -873,6 +877,7 @@ func (c *Config) SaveToStorage(storage StorageAdapter) error {
 		endpoint.Enabled = normalizedEndpoint.Enabled
 		endpoint.Transformer = normalizedEndpoint.Transformer
 		endpoint.Model = normalizedEndpoint.Model
+		endpoint.ReasoningEffort = normalizedEndpoint.ReasoningEffort
 		endpoint.Remark = normalizedEndpoint.Remark
 		endpoint.SortOrder = i
 
