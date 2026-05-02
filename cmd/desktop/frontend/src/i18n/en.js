@@ -104,7 +104,7 @@ export default {
         reasoningEffortMedium: 'medium',
         reasoningEffortHigh: 'high',
         reasoningEffortXHigh: 'xhigh',
-        reasoningEffortHelp: 'Only applies to Claude transformer. Sets reasoning.effort and syncs thinking.budget_tokens.',
+        reasoningEffortHelp: 'Applies to Claude / OpenAI2 transformers. Sets reasoning.effort and syncs thinking.budget_tokens.',
         remark: 'Remark',
         remarkHelp: 'Optional: Add a remark for this endpoint',
         cancel: 'Cancel',

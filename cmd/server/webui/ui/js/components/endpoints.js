@@ -386,6 +386,18 @@ class Endpoints {
                                 </div>
                                 <small class="text-muted">${t('endpoints.fetchModelsHint')}</small>
                             </div>
+                            <div class="form-group" id="reasoning-effort-group">
+                                <label class="form-label">${t('endpoints.reasoningEffort')}</label>
+                                <select class="form-select" name="reasoningEffort">
+                                    <option value="" ${!endpoint?.reasoningEffort ? 'selected' : ''}>${t('endpoints.reasoningEffortAuto')}</option>
+                                    <option value="minimal" ${endpoint?.reasoningEffort === 'minimal' ? 'selected' : ''}>minimal</option>
+                                    <option value="low" ${endpoint?.reasoningEffort === 'low' ? 'selected' : ''}>low</option>
+                                    <option value="medium" ${endpoint?.reasoningEffort === 'medium' ? 'selected' : ''}>medium</option>
+                                    <option value="high" ${endpoint?.reasoningEffort === 'high' ? 'selected' : ''}>high</option>
+                                    <option value="xhigh" ${endpoint?.reasoningEffort === 'xhigh' ? 'selected' : ''}>xhigh</option>
+                                </select>
+                                <small class="text-muted">${t('endpoints.reasoningEffortHint')}</small>
+                            </div>
                             <div class="form-group">
                                 <label class="form-label">${t('endpoints.remark')}</label>
                                 <textarea class="form-textarea" name="remark">${endpoint ? this.escapeHtml(endpoint.remark || '') : ''}</textarea>
@@ -413,6 +425,15 @@ class Endpoints {
             this.saveEndpoint(isEdit, endpoint?.name, isClone);
         });
         document.getElementById('fetch-models-btn').addEventListener('click', () => this.fetchModels());
+        const transformerSelect = document.querySelector('select[name="transformer"]');
+        const updateReasoningVisibility = () => {
+            const group = document.getElementById('reasoning-effort-group');
+            if (group) {
+                group.style.display = transformerSelect.value === 'claude' || transformerSelect.value === 'openai2' ? 'block' : 'none';
+            }
+        };
+        transformerSelect.addEventListener('change', updateReasoningVisibility);
+        updateReasoningVisibility();
     }
 
     async fetchModels() {
@@ -519,6 +540,7 @@ class Endpoints {
             apiKey: formData.get('apiKey'),
             transformer: formData.get('transformer'),
             model: formData.get('model'),
+            reasoningEffort: formData.get('reasoningEffort') || '',
             remark: formData.get('remark'),
             enabled: formData.get('enabled') === 'on'
         };

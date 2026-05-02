@@ -345,7 +345,7 @@ export function handleTransformerChange() {
 
     modelRequired.style.display = 'none';
     if (reasoningGroup) {
-        reasoningGroup.style.display = transformer === 'claude' ? 'block' : 'none';
+        reasoningGroup.style.display = transformer === 'claude' || transformer === 'openai2' ? 'block' : 'none';
     }
     if (transformer === 'claude') {
         modelInput.placeholder = 'e.g., claude-3-5-sonnet-20241022';

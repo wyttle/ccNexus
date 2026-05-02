@@ -471,7 +471,8 @@ func (p *Proxy) handleProxy(w http.ResponseWriter, r *http.Request) {
 		transformerName := trans.Name()
 
 		requestPayload := bodyBytes
-		if strings.TrimSpace(strings.ToLower(endpoint.Transformer)) == "claude" {
+		endpointTransformer := strings.TrimSpace(strings.ToLower(endpoint.Transformer))
+		if endpointTransformer == "claude" || endpointTransformer == "openai2" {
 			requestPayload = applyEndpointReasoningEffort(bodyBytes, endpoint.ReasoningEffort)
 		}
 
@@ -646,14 +647,14 @@ func (p *Proxy) handleProxy(w http.ResponseWriter, r *http.Request) {
 				p.stats.RecordTokens(endpoint.Name, inputTokens, outputTokens)
 				p.recordCredentialUsage(credentialID, endpoint.Name, 1, 0, inputTokens, outputTokens)
 				p.markCredentialSuccess(credentialID)
-			p.markRequestInactive(endpoint.Name)
-			if p.onEndpointSuccess != nil {
-				p.onEndpointSuccess(endpoint.Name)
+				p.markRequestInactive(endpoint.Name)
+				if p.onEndpointSuccess != nil {
+					p.onEndpointSuccess(endpoint.Name)
+				}
+				totalElapsed := time.Since(requestStart).Round(time.Millisecond)
+				logger.Debug("[%s] Requested tokens=%d/%d latency=%s cred_id=%d", endpoint.Name, inputTokens, outputTokens, totalElapsed, credentialID)
+				return
 			}
-			totalElapsed := time.Since(requestStart).Round(time.Millisecond)
-			logger.Debug("[%s] Requested tokens=%d/%d latency=%s cred_id=%d", endpoint.Name, inputTokens, outputTokens, totalElapsed, credentialID)
-			return
-		}
 		}
 
 		if shouldRetry(resp.StatusCode) {
@@ -941,13 +942,13 @@ func dumpForwardDebug(endpoint config.Endpoint, transformerName string, original
 	base := fmt.Sprintf("%s-%s", now, sanitizeDebugName(endpoint.Name))
 
 	meta := map[string]interface{}{
-		"time_utc":            time.Now().UTC().Format(time.RFC3339Nano),
-		"endpoint":            endpoint.Name,
-		"transformer":         endpoint.Transformer,
-		"transformer_name":    transformerName,
-		"endpoint_reasoning":  endpoint.ReasoningEffort,
-		"endpoint_model":      endpoint.Model,
-		"auth_mode":           endpoint.AuthMode,
+		"time_utc":           time.Now().UTC().Format(time.RFC3339Nano),
+		"endpoint":           endpoint.Name,
+		"transformer":        endpoint.Transformer,
+		"transformer_name":   transformerName,
+		"endpoint_reasoning": endpoint.ReasoningEffort,
+		"endpoint_model":     endpoint.Model,
+		"auth_mode":          endpoint.AuthMode,
 	}
 	if data, err := json.MarshalIndent(meta, "", "  "); err == nil {
 		_ = os.WriteFile(filepath.Join(dir, base+".meta.json"), data, 0o644)

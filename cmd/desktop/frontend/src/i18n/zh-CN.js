@@ -104,7 +104,7 @@ export default {
         reasoningEffortMedium: 'medium（中）',
         reasoningEffortHigh: 'high（高）',
         reasoningEffortXHigh: 'xhigh（很高）',
-        reasoningEffortHelp: '仅 Claude 转换器生效。会写入 reasoning.effort 并同步 thinking.budget_tokens',
+        reasoningEffortHelp: '仅 Claude / OpenAI2 转换器生效。会写入 reasoning.effort 并同步 thinking.budget_tokens',
         remark: '备注',
         remarkHelp: '可选：为此端点添加备注说明',
         cancel: '取消',

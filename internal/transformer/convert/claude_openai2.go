@@ -53,6 +53,12 @@ func ClaudeReqToOpenAI2(claudeReq []byte, model string) ([]byte, error) {
 	// TODO: max_output_tokens is standard OpenAI Responses API param but some
 	// third-party endpoints (e.g. SiliconFlow) don't support it. Skipping for compatibility.
 
+	if req.Reasoning != nil {
+		openai2Req["reasoning"] = req.Reasoning
+	} else if reasoning := reasoningFromClaudeThinking(req.Thinking); reasoning != nil {
+		openai2Req["reasoning"] = reasoning
+	}
+
 	// Convert tools
 	if len(req.Tools) > 0 {
 		var tools []map[string]interface{}
@@ -82,6 +88,49 @@ func ClaudeReqToOpenAI2(claudeReq []byte, model string) ([]byte, error) {
 	}
 
 	return json.Marshal(openai2Req)
+}
+
+func reasoningFromClaudeThinking(thinking interface{}) map[string]interface{} {
+	thinkingMap, ok := thinking.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	thinkingType, _ := thinkingMap["type"].(string)
+	if strings.ToLower(strings.TrimSpace(thinkingType)) != "enabled" {
+		return nil
+	}
+	budget, ok := numericThinkingBudget(thinkingMap["budget_tokens"])
+	if !ok {
+		return map[string]interface{}{"effort": "medium"}
+	}
+	switch {
+	case budget >= 16384:
+		return map[string]interface{}{"effort": "xhigh"}
+	case budget >= 8192:
+		return map[string]interface{}{"effort": "high"}
+	case budget >= 4096:
+		return map[string]interface{}{"effort": "medium"}
+	default:
+		return map[string]interface{}{"effort": "low"}
+	}
+}
+
+func numericThinkingBudget(value interface{}) (float64, bool) {
+	switch v := value.(type) {
+	case float64:
+		return v, true
+	case float32:
+		return float64(v), true
+	case int:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	case json.Number:
+		f, err := v.Float64()
+		return f, err == nil
+	default:
+		return 0, false
+	}
 }
 
 func mapClaudeToolChoiceToOpenAI2(toolChoice interface{}) interface{} {
