@@ -112,8 +112,9 @@ type ClaudeRequest struct {
 	MaxTokens   int             `json:"max_tokens,omitempty"`
 	Temperature float64         `json:"temperature,omitempty"`
 	Stream      bool            `json:"stream,omitempty"`
-	System      interface{}     `json:"system,omitempty"`   // Can be string or array of system messages
-	Thinking    interface{}     `json:"thinking,omitempty"` // Claude's thinking/extended thinking parameter
+	System      interface{}     `json:"system,omitempty"` // Can be string or array of system messages
+	Thinking    interface{}     `json:"thinking,omitempty"`
+	Reasoning   interface{}     `json:"reasoning,omitempty"`
 	Tools       []ClaudeTool    `json:"tools,omitempty"`
 	ToolChoice  interface{}     `json:"tool_choice,omitempty"`
 }

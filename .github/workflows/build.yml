@@ -2,6 +2,8 @@ name: Build and Release
 
 on:
   push:
+    branches:
+      - feat/reasoning-effort-xhigh-openai2
     tags:
       - 'v*'
   pull_request:
@@ -181,7 +183,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/feat/reasoning-effort-xhigh-openai2'
 
     steps:
       - name: Checkout code
@@ -195,9 +197,12 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'openai2-reasoning-dev' }}
+          name: ${{ github.ref_type == 'tag' && github.ref_name || 'OpenAI2 Reasoning Dev' }}
+          target_commitish: ${{ github.sha }}
           files: artifacts/**/*
           draft: false
-          prerelease: false
+          prerelease: ${{ github.ref_type != 'tag' }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
