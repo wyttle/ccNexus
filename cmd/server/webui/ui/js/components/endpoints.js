@@ -429,7 +429,7 @@ class Endpoints {
         const updateReasoningVisibility = () => {
             const group = document.getElementById('reasoning-effort-group');
             if (group) {
-                group.style.display = transformerSelect.value === 'claude' || transformerSelect.value === 'openai2' ? 'block' : 'none';
+                group.style.display = transformerSelect.value === 'claude' || transformerSelect.value === 'openai' || transformerSelect.value === 'openai2' ? 'block' : 'none';
             }
         };
         transformerSelect.addEventListener('change', updateReasoningVisibility);

@@ -81,7 +81,7 @@ export default {
         remark: 'Remark',
         reasoningEffort: 'Reasoning Effort',
         reasoningEffortAuto: 'Auto (follow request)',
-        reasoningEffortHint: 'Applies to Claude / OpenAI2 transformers. Sets reasoning.effort and syncs thinking.budget_tokens.',
+        reasoningEffortHint: 'Applies to Claude / OpenAI / OpenAI2 transformers. Sets reasoning.effort and syncs thinking.budget_tokens where supported.',
         fetchModels: 'Fetch Models',
         fetchModelsHint: 'Click "Fetch Models" to load available models from the API',
         modelPlaceholder: 'gpt-4, gemini-pro, etc.',

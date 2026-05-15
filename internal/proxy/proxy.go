@@ -321,6 +321,9 @@ func (p *Proxy) handleProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+	if skipEmptyProxyBody(w, bodyBytes) {
+		return
+	}
 
 	requestStart := time.Now()
 	reqBytes := len(bodyBytes)
@@ -472,7 +475,7 @@ func (p *Proxy) handleProxy(w http.ResponseWriter, r *http.Request) {
 
 		requestPayload := bodyBytes
 		endpointTransformer := strings.TrimSpace(strings.ToLower(endpoint.Transformer))
-		if endpointTransformer == "claude" || endpointTransformer == "openai2" {
+		if endpointTransformer == "claude" || endpointTransformer == "openai" || endpointTransformer == "openai2" {
 			requestPayload = applyEndpointReasoningEffort(bodyBytes, endpoint.ReasoningEffort)
 		}
 

@@ -81,7 +81,7 @@ export default {
         remark: '备注',
         reasoningEffort: '思考强度',
         reasoningEffortAuto: '自动（按请求）',
-        reasoningEffortHint: '仅 Claude / OpenAI2 转换器生效。会写入 reasoning.effort 并同步 thinking.budget_tokens',
+        reasoningEffortHint: '仅 Claude / OpenAI / OpenAI2 转换器生效。会写入 reasoning.effort，并在支持时同步 thinking.budget_tokens',
         fetchModels: '获取模型',
         fetchModelsHint: '点击"获取模型"从 API 加载可用模型',
         modelPlaceholder: 'gpt-4、gemini-pro 等',

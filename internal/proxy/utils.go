@@ -24,6 +24,15 @@ func shouldRetry(statusCode int) bool {
 		statusCode != http.StatusUnauthorized
 }
 
+func skipEmptyProxyBody(w http.ResponseWriter, bodyBytes []byte) bool {
+	if len(strings.TrimSpace(string(bodyBytes))) > 0 {
+		return false
+	}
+	logger.Debug("Empty proxy request body, skipping transform")
+	w.WriteHeader(http.StatusOK)
+	return true
+}
+
 // cleanIncompleteToolCalls removes incomplete tool_use blocks from request
 func cleanIncompleteToolCalls(bodyBytes []byte) ([]byte, error) {
 	var req map[string]interface{}
